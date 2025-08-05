@@ -12,93 +12,93 @@
         <script src="https://unpkg.com/@tensorflow-models/facemesh@0.0.4/dist/facemesh.js"></script>
         <!--Original scripts-->
         <script type="text/javascript"> 
-            var video;                        // video camera 
-            var model;                        // for face detection 
-            var camera;                       // virtual camera ( = view point )
-            var canvas;                       // drawing area
-            var screenWidth, screenHeight;    // size of drawing area
-            var halfWidth, halfHeight;        // half the size of drawing area
+            let video_element;                        // video camera 
+            let face_model;                        // for face detection 
+            let virtual_camera;                       // virtual camera ( = view point )
+            let canvas_element;                       // drawing area
+            let screen_width, screen_height;    // size of drawing area
+            let half_width, half_height;        // half the size of drawing area
             
             // Executed after loading the page.
             window.onload = function() {
                 // Access to canvas element
-                canvas=document.getElementsByClassName('a-canvas')[0];
+                canvas_element = document.getElementsByClassName("a-canvas")[0];
                 // Access a-scene (id=scene)
-                let scene = document.getElementById('scene');
+                let scene = document.getElementById("scene");
                 // Access virtual camera of a-frame 
-                camera= scene.camera;  
+                virtual_camera = scene.camera;  
                 // Set resolution of video (approx. 640x480)
                 let constraints = { video: { width: 640, height: 480 } };
                 // Acquire video camera
                 navigator.mediaDevices.getUserMedia(constraints).then(
                     function(mediaStream) {
                         // Access the element to draw video
-                        video = document.getElementById("video");
+                        video_element = document.getElementById("video");
                         // Assign mediaStream to video source
-                        video.srcObject = mediaStream;
+                        video_element.srcObject = mediaStream;
                         // Play
-                        video.onloadedmetadata = function(e) {
-                            video.play();
+                        video_element.onloadedmetadata = function(e) {
+                            video_element.play();
                             // Load the model of face detection
-                            LoadFaceModel();              
+                            loadFaceModel();              
                         };
                     }
                 );
             };
 
-        // Used to initialize face detetion
-        async function LoadFaceModel() {
-            model = await facemesh.load();
-            FaceTracking();    
+        // Used to initialize face detection
+        async function loadFaceModel() {
+            face_model = await facemesh.load();
+            faceTracking();    
         } 
 
-        // Used to controll virtual camera
-        async function FaceTracking() {
+        // Used to control virtual camera
+        async function faceTracking() {
             // Change parameters if window size is changed
-            if(screenWidth!=canvas.width || screenHeight!=canvas.height){
-                screenWidth=canvas.width;
-                screenHeight=canvas.height;  
+            if(screen_width != canvas_element.width || screen_height != canvas_element.height){
+                screen_width = canvas_element.width;
+                screen_height = canvas_element.height;  
                 // Calculate height by fixing width as 1
-                let height=screenHeight/screenWidth;
+                let height = screen_height/screen_width;
                 //Acquire and resize virtual room
-                let room= document.getElementById('room');
-                room.setAttribute('scale', { x: 1, y: height, z: 1 });
-                halfWidth = 0.5; //width/2=1/2=0.5            
-                halfHeight = height/2;            
+                let room = document.getElementById("room");
+                room.setAttribute("scale", { x: 1, y: height, z: 1 });
+                half_width = 0.5; //width/2=1/2=0.5            
+                half_height = height/2;            
             }   
 
             // Try to detect face
-            let predictions = await model.estimateFaces(video);
+            let predictions = await face_model.estimateFaces(video_element);
             if (predictions.length > 0) {
                 // Acquire top Left and bottom Right coordinates of bounding box
                 let keypoints = predictions[0].boundingBox;
-                let topLeft=keypoints.topLeft;
-                let bottomRight=keypoints.bottomRight;
+                let top_left = keypoints.topLeft;
+                let bottom_right = keypoints.bottomRight;
                 // Calculate center (Normalized as -1~1)
-                let cX=(topLeft[0]+bottomRight[0])/video.videoWidth-1;
-                let cY=(topLeft[1]+bottomRight[1])/video.videoHeight-1; 
+                let center_x = (top_left[0]+bottom_right[0])/video_element.videoWidth-1;
+                let center_y = (top_left[1]+bottom_right[1])/video_element.videoHeight-1; 
                 // Control camera position according to face position
-                camera.position.x=-cX * halfWidth; 
-                camera.position.y=-cY * halfHeight;
-                camera.position.z=2.5; //z position is fixed.    
+                virtual_camera.position.x = -center_x * half_width; 
+                virtual_camera.position.y = -center_y * half_height;
+                virtual_camera.position.z = 2.5; //z position is fixed.    
                 // Calculate projection matrix
-                camera.projectionMatrix=PerspectiveOffCenter(
-                    (-halfWidth-camera.position.x),(halfWidth-camera.position.x),
-                    (-halfHeight-camera.position.y),(halfHeight-camera.position.y),
-                    camera.position.z,5);           
+                virtual_camera.projectionMatrix = perspectiveOffCenter(
+                    (-half_width-virtual_camera.position.x),(half_width-virtual_camera.position.x),
+                    (-half_height-virtual_camera.position.y),(half_height-virtual_camera.position.y),
+                    virtual_camera.position.z,5);           
             }
-            window.requestAnimationFrame(FaceTracking);        
+            window.requestAnimationFrame(faceTracking);        
         }    
 
-        function PerspectiveOffCenter(left, right, bottom, top, near, far) {
-            var x = 2.0 * near / (right - left);
-            var y = 2.0 * near / (top - bottom);
-            var a = (right + left) / (right - left);
-            var b = (top + bottom) / (top - bottom);
-            var c = -(far + near) / (far - near);
-            var d = -(2.0 * far * near) / (far - near);
-            var e = -1.0;
-            var m = new THREE.Matrix4();
+        function perspectiveOffCenter(left, right, bottom, top, near, far) {
+            let x = 2.0 * near / (right - left);
+            let y = 2.0 * near / (top - bottom);
+            let a = (right + left) / (right - left);
+            let b = (top + bottom) / (top - bottom);
+            let c = -(far + near) / (far - near);
+            let d = -(2.0 * far * near) / (far - near);
+            let e = -1.0;
+            let m = new THREE.Matrix4();
             m.set( x,0,a,0, 0,y,b,0, 0,0,c, d,0,0, e,0);
             return m;
         }
