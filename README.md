@@ -13,6 +13,10 @@ This was a personal demo project I created in 2021 to experiment with face track
 - **Responsive Design**: Adapts to different screen sizes and window dimensions
 - **Cross-platform**: Works on desktop and mobile devices with camera access
 
+<p float="left">
+  <img src="https://github.com/FilipeLopesPires/3DCameraParallaxWeb/blob/main/demo.gif" width="720px">
+</p>
+
 ## Live Demo
 
 Open `index.html` in a modern web browser to experience the 3D parallax effect.
