@@ -2,7 +2,44 @@
 <html>
     <head>
         <meta charset="utf-8">
+        <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="mobile-web-app-capable" content="no">
+        <meta name="apple-mobile-web-app-capable" content="no">
         <title>Web Parallax</title>
+        
+        <!-- Disable VR features before A-Frame loads -->
+        <script>
+            // Completely disable VR and sensor access at browser level
+            if (window.location.protocol !== "https:") {
+                // Override WebXR APIs
+                if (navigator.xr) {
+                    navigator.xr.isSessionSupported = () => Promise.resolve(false);
+                    navigator.xr.requestSession = () => Promise.reject(new Error("WebXR not supported"));
+                }
+                
+                // Override VR display APIs
+                if (navigator.getVRDisplays) {
+                    navigator.getVRDisplays = () => Promise.resolve([]);
+                }
+                
+                if (navigator.getVRDisplaysAsync) {
+                    navigator.getVRDisplaysAsync = () => Promise.resolve([]);
+                }
+                
+                // Override device orientation APIs
+                if (window.DeviceOrientationEvent) {
+                    window.DeviceOrientationEvent.requestPermission = () => Promise.resolve("denied");
+                }
+                
+                if (window.DeviceMotionEvent) {
+                    window.DeviceMotionEvent.requestPermission = () => Promise.resolve("denied");
+                }
+                
+                console.log("VR and sensor features disabled - running in standard mode");
+            }
+        </script>
+        
         <script src="https://aframe.io/releases/1.1.0/aframe.min.js"></script>
         <!--Loading libraries related with TensorFlow-->
         <script src="https://unpkg.com/@tensorflow/tfjs-core@2.1.0/dist/tf-core.js"></script>
@@ -10,103 +47,12 @@
         <script src="https://unpkg.com/@tensorflow/tfjs-backend-webgl@2.1.0/dist/tf-backend-webgl.js"></script>
         <!--Loading model of face detection.-->
         <script src="https://unpkg.com/@tensorflow-models/facemesh@0.0.4/dist/facemesh.js"></script>
-        <!--Original scripts-->
-        <script type="text/javascript"> 
-            let video_element;                        // video camera 
-            let face_model;                        // for face detection 
-            let virtual_camera;                       // virtual camera ( = view point )
-            let canvas_element;                       // drawing area
-            let screen_width, screen_height;    // size of drawing area
-            let half_width, half_height;        // half the size of drawing area
-            
-            // Executed after loading the page.
-            window.onload = function() {
-                // Access to canvas element
-                canvas_element = document.getElementsByClassName("a-canvas")[0];
-                // Access a-scene (id=scene)
-                let scene = document.getElementById("scene");
-                // Access virtual camera of a-frame 
-                virtual_camera = scene.camera;  
-                // Set resolution of video (approx. 640x480)
-                let constraints = { video: { width: 640, height: 480 } };
-                // Acquire video camera
-                navigator.mediaDevices.getUserMedia(constraints).then(
-                    function(mediaStream) {
-                        // Access the element to draw video
-                        video_element = document.getElementById("video");
-                        // Assign mediaStream to video source
-                        video_element.srcObject = mediaStream;
-                        // Play
-                        video_element.onloadedmetadata = function(e) {
-                            video_element.play();
-                            // Load the model of face detection
-                            loadFaceModel();              
-                        };
-                    }
-                );
-            };
-
-        // Used to initialize face detection
-        async function loadFaceModel() {
-            face_model = await facemesh.load();
-            faceTracking();    
-        } 
-
-        // Used to control virtual camera
-        async function faceTracking() {
-            // Change parameters if window size is changed
-            if(screen_width != canvas_element.width || screen_height != canvas_element.height){
-                screen_width = canvas_element.width;
-                screen_height = canvas_element.height;  
-                // Calculate height by fixing width as 1
-                let height = screen_height/screen_width;
-                //Acquire and resize virtual room
-                let room = document.getElementById("room");
-                room.setAttribute("scale", { x: 1, y: height, z: 1 });
-                half_width = 0.5; //width/2=1/2=0.5            
-                half_height = height/2;            
-            }   
-
-            // Try to detect face
-            let predictions = await face_model.estimateFaces(video_element);
-            if (predictions.length > 0) {
-                // Acquire top Left and bottom Right coordinates of bounding box
-                let keypoints = predictions[0].boundingBox;
-                let top_left = keypoints.topLeft;
-                let bottom_right = keypoints.bottomRight;
-                // Calculate center (Normalized as -1~1)
-                let center_x = (top_left[0]+bottom_right[0])/video_element.videoWidth-1;
-                let center_y = (top_left[1]+bottom_right[1])/video_element.videoHeight-1; 
-                // Control camera position according to face position
-                virtual_camera.position.x = -center_x * half_width; 
-                virtual_camera.position.y = -center_y * half_height;
-                virtual_camera.position.z = 2.5; //z position is fixed.    
-                // Calculate projection matrix
-                virtual_camera.projectionMatrix = perspectiveOffCenter(
-                    (-half_width-virtual_camera.position.x),(half_width-virtual_camera.position.x),
-                    (-half_height-virtual_camera.position.y),(half_height-virtual_camera.position.y),
-                    virtual_camera.position.z,5);           
-            }
-            window.requestAnimationFrame(faceTracking);        
-        }    
-
-        function perspectiveOffCenter(left, right, bottom, top, near, far) {
-            let x = 2.0 * near / (right - left);
-            let y = 2.0 * near / (top - bottom);
-            let a = (right + left) / (right - left);
-            let b = (top + bottom) / (top - bottom);
-            let c = -(far + near) / (far - near);
-            let d = -(2.0 * far * near) / (far - near);
-            let e = -1.0;
-            let m = new THREE.Matrix4();
-            m.set( x,0,a,0, 0,y,b,0, 0,0,c, d,0,0, e,0);
-            return m;
-        }
-        </script>
+        <!--Custom JavaScript for face tracking and camera control-->
+        <script src="face_tracker.js"></script>
     </head>
     
     <body>
-        <a-scene id="scene" background="color: #FAFAFA" style="position: absolute;" >
+        <a-scene id="scene" background="color: #FAFAFA" style="position: absolute;" vr-mode="enabled: false" ar-mode="enabled: false" embedded="true">
             <!--Objects for shown in the virtual room-->
             <a-entity id="objects" position = "0 0 -0.5" scale="1 1 1">
                 <!-- Instead of basic shapes, custom 3D models can be added (https://medium.com/@akashkuttappa/using-3d-models-with-ar-js-and-a-frame-84d462efe498) -->
@@ -127,7 +73,18 @@
             <!--Camera-->
             <a-entity camera position="0 0 0" ></a-entity>
         </a-scene>
-        <!--virualize camera image-->
+        <!--Virtualize camera image-->
         <video id="video" style="position: absolute; width:320px; height:240px;"></video>
+        
+        <!--Instructions and status display-->
+        <div id="instructions" style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px; font-family: Arial, sans-serif; font-size: 12px; max-width: 300px;">
+            <div id="status">Initializing...</div>
+            <div id="controls" style="margin-top: 10px;">
+                <strong>Controls:</strong><br>
+                WASD or Arrow Keys: Move camera<br>
+                Q/E: Rotate camera<br>
+                <em>Face tracking works without HTTPS, VR mode requires HTTPS</em>
+            </div>
+        </div>
     </body>
 </html>

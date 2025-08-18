@@ -21,6 +21,66 @@ This was a personal demo project I created in 2021 to experiment with face track
 
 Open `index.html` in a modern web browser to experience the 3D parallax effect.
 
+## Quick Start
+
+### Option 1: Simple File Opening
+You can open `index.html` directly in your browser by double-clicking the file or dragging it into a browser window. However, this method has limitations mainly in asset loading.
+
+### Option 2: Using a Local Web Server (Recommended)
+
+The recommended way to run this application is using a simple local web server. Here's how:
+
+#### Using Python (Most Common)
+
+1. **Open Terminal/Command Prompt**
+   - **Windows**: Press `Win + R`, type `cmd`, press Enter
+   - **macOS**: Press `Cmd + Space`, type `Terminal`, press Enter
+   - **Linux**: Press `Ctrl + Alt + T`
+
+2. **Navigate to Project Directory**
+   ```bash
+   cd path/to/3DCameraParallaxWeb
+   ```
+
+3. **Start the Server**
+   ```bash
+   python3 -m http.server 8000
+   ```
+   
+   If you're on Windows and `python3` doesn't work, try:
+   ```bash
+   python -m http.server 8000
+   ```
+
+4. **Open in Browser**
+   - Open your web browser
+   - Navigate to: `http://localhost:8000`
+   - The application will load automatically
+
+#### Using Node.js (Alternative)
+If you have Node.js installed:
+```bash
+npx http-server
+```
+
+#### Using PHP (Alternative)
+If you have PHP installed:
+```bash
+php -S localhost:8000
+```
+
+## Why Use a Web Server?
+
+When you open `index.html` directly in a browser (using `file://` protocol), several issues occur:
+
+1. **CORS Policy Errors**: Modern browsers block certain features when running from `file://` protocol
+2. **Asset Loading Failures**: Textures and external resources may not load properly
+3. **Security Restrictions**: Many web APIs are disabled for security reasons
+4. **Inconsistent Behavior**: Different browsers handle `file://` protocol differently
+5. **Development Issues**: Debugging and development tools may not work properly
+
+Using a local web server simply avoids these issues.
+
 ## Technologies Used
 
 - **A-Frame** (1.1.0) - Web framework for building 3D experiences
