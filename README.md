@@ -182,4 +182,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Author
 
-I'm the sole author of this repository. For further information, please contact me at fsnap@protonmail.com.
+I'm the sole author of this repository. For further information, feel free to reach out.
